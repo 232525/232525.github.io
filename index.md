@@ -9,23 +9,5 @@ My research interests include computer vision, specifically for image captioning
 
 ## Publications
 ---
-<table border="1">
-<tr>
-<td>
-<b>Yiyu Wang</b>, Jungang Xu, Yingfei Sun,
-<b>"End-to-End Transformer Based Model for Image Captioning"</b>, 
-AAAI Conference on Artificial Intelligence (AAAI), 2022 
-<a href="...">[PDF]</a> 
-<a href="https://github.com/232525/PureT">[Code]</a> 
-</td>
-</tr>
-
-<tr>
-<td>
-<b>Yiyu Wang</b>, Jungang Xu, Yingfei Sun,
-<b>"A visual persistence model for image captioning"</b>, 
-Neurocomputing, 2022 <a href="https://www.sciencedirect.com/science/article/pii/S0925231221014922?via%3Dihub">[PDF]</a> 
-</td>
-</tr>
-
-</table>
++ __Yiyu Wang__, Jungang Xu, Yingfei Sun, __"End-to-End Transformer Based Model for Image Captioning"__, AAAI Conference on Artificial Intelligence (AAAI), 2022 [PDF](...)[Code](https://github.com/232525/PureT)
++ __Yiyu Wang__, Jungang Xu, Yingfei Sun, __"A visual persistence model for image captioning"__, Neurocomputing, 2022 [PDF](https://www.sciencedirect.com/science/article/pii/S0925231221014922?via%3Dihub)

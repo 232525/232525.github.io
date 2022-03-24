@@ -12,6 +12,7 @@ show_excerpts: true # set to true to show excerpts on the homepage
 plainwhite:
   name: Yiyu Wang
   tagline: PhD Student
+  university: University of Chinese Academy of Sciences
   date_format: "%b %-d, %Y"
   sitemap: true # set to true to generate sitemap.xml content
   search: true # set to true to enable searchbar
@@ -25,3 +26,4 @@ plainwhite:
   # generate social links in footer
   social_links:
     github:  232525
+    emal: wangyiyu18@mails.ucas.ac.cn
