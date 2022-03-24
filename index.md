@@ -1,9 +1,0 @@
-## Welcome to Curya's Pages
----
-
-
-
-
-
-
-
