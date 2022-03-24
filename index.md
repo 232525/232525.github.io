@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: home
 ---
 
 ## Welcome to Curya's Pages
