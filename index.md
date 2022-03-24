@@ -1,3 +1,1 @@
----
-layout: home
----
+## Welcome to Curya's Pages
