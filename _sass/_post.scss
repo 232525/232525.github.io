@@ -6,8 +6,9 @@
         .post-title {
         	font-size:32px;
         	font-weight: normal;
-            margin: 0 -110px;
-            margin-bottom: 0 -20px;
+            margin: 0px -110px;
+            line-height: 42px;
+            // margin-bottom: 0px 0px;
         	@include media-query($on-palm) {
         		font-size: 30px;
         	}
