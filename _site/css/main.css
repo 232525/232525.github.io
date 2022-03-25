@@ -39,13 +39,13 @@ body { background-color: #e0e0e3; }
 .wrapper { margin: 0 auto; max-width: 1100px; }
 
 @media (max-width: 1120px) { .wrapper { max-width: 800px; } }
-.header { line-height: 32px; background-color: #607D8B; padding: 10px; margin: 0; }
+.header { line-height: 32px; background-color: #263238; padding: 10px; margin: 0; }
 .header:after { clear: both; content: ' '; display: block; }
 .header #sidebar-toggle { display: none; }
 .header .site-title { float: left; color: #FFF; text-decoration: none; font-size: 16px; line-height: 32px; }
 .header .site-nav { text-align: right; }
 .header .site-nav a { text-decoration: none; color: #CFD8DC; padding: 10px 20px; white-space: nowrap; }
-.header .site-nav a:hover, .header .site-nav a:focus { background: #78909C; }
+.header .site-nav a:hover, .header .site-nav a:focus { background: #607d8b; }
 
 .header-placeholder { position: absolute; }
 
@@ -57,16 +57,16 @@ body { background-color: #e0e0e3; }
 .page-content { padding: 30px 0; }
 .page-content .wrapper { position: relative; background: #FAFAFA; box-shadow: 0 1px 4px #999; outline: 1px solid #CCC; }
 .page-content .wrapper:after { clear: both; content: ''; display: block; }
-.page-content .wrapper:before { content: ''; display: block; position: absolute; width: 300px; height: 100%; right: 0; top: 0; background: #EEE; }
+.page-content .wrapper:before { content: ''; display: block; position: absolute; width: 300px; height: 100%; right: 0; top: 0; background: #DDDDDD; }
 .page-content img { max-width: 100%; }
 
 .col-main { position: relative; box-sizing: border-box; padding: 30px; width: 800px; float: left; animation: ebani-descend ease .5s 1; }
-.col-main h1, .col-main h2, .col-main h3, .col-main h4, .col-main .post-meta, .col-main .rss-link { animation: ebani-ascend ease .5s 1; }
+.col-main h1, .col-main h2, .col-main h3, .col-main h4, .col-main .post-meta, .col-main .rss-link { animation: ebani-ascend ease .5s 1; line-height: 20px; }
 .col-main article table, .col-main article pre, .col-main article img, .col-main .post-excerpt table, .col-main .post-excerpt pre, .col-main .post-excerpt img { animation: ebani-ascend ease .3s 1; }
 
-.col-second { position: relative; box-sizing: border-box; float: right; width: 300px; padding: 20px; background: #EEE; z-index: 10; }
+.col-second { position: relative; box-sizing: border-box; float: right; width: 300px; padding: 20px; background: #DDDDDD; z-index: 10; }
 
-.col-box { color: #666; font-size: 14px; padding-bottom: 20px; }
+.col-box { font-size: 14px; padding-bottom: 20px; }
 .col-box p { margin: 0; }
 .col-box ul { padding-left: 20px; margin: 0; }
 .col-box:not(:first-child) { border-top: 1px solid #ccc; padding-top: 20px; }
@@ -79,20 +79,22 @@ body { background-color: #e0e0e3; }
   .col-main { width: 100%; }
   .col-second { margin-left: -300px; } }
 .col-box-author { text-align: center; }
-.col-box-author .avatar { width: 135px; height: 135px; border-radius: 100%; margin: 20px auto; display: block; }
-.col-box-author .name { font-size: 16px; }
+.col-box-author .avatar { width: 200px; height: 200px; border-radius: 100%; margin: 20px auto; display: block; }
+.col-box-author .name { font-size: 16px; font-weight: bold; }
 .col-box-author .contact { margin-top: 10px; }
 .col-box-author .contact a { background: #999; color: #eee; padding: 5px 10px; text-decoration: none; border-radius: 5px; white-space: nowrap; }
 .col-box-author .contact a:hover { transition: background 0.3s ease; background: #666; }
 
+.social_link { font-size: 14px; line-height: 25px; }
+
 .footer { padding: 60px 0; text-align: center; color: #666; font-size: 14px; }
 
 .post .post-header { margin: 0 100px; margin-bottom: 40px; padding: 20px; }
-.post .post-header .post-title { font-size: 40px; font-weight: normal; margin: 0 -100px; }
-@media screen and (max-width: 600px) { .post .post-header .post-title { font-size: 34px; } }
+.post .post-header .post-title { font-size: 32px; font-weight: normal; margin: 0 -110px; margin-bottom: 0 -20px; }
+@media screen and (max-width: 600px) { .post .post-header .post-title { font-size: 30px; } }
 .post .post-header .post-meta { color: #999; font-size: 14px; margin: 0 -100px; }
 @media screen and (max-width: 600px) { .post .post-header { text-align: center; margin-bottom: 10px; padding: 10px; } }
-.post .post-content { color: #333; }
+.post .post-content { color: #333; padding: 0px 15px; }
 .post .post-content h1, .post .post-content h2, .post .post-content h3, .post .post-content h4, .post .post-content h5, .post .post-content h6 { color: #000; }
 .post .post-content h1, .post .post-content h2 { margin-bottom: 10px; margin-top: 30px; }
 .post .post-content h1, .post .post-content h2, .post .post-content h3 { border-bottom: 1px solid #CCC; }
@@ -105,15 +107,15 @@ body { background-color: #e0e0e3; }
 @media screen and (max-width: 600px) { .home .page-heading { margin: 10px; font-size: 34px; } }
 .home .rss-link { float: right; text-decoration: none; border: 1px solid; color: #999; background: #fff; font-size: 11.2px; padding: 1px 8px; }
 .home .rss-link:hover, .home .rss-link:focus { color: #666; }
-.home .post-list { margin: 0; padding: 20px 40px; list-style: none; }
-.home .post-list > li { padding-bottom: 30px; border-bottom: 1px solid #CCC; margin-bottom: 30px; }
+.home .post-list { margin: 0; padding: 0px 15px; list-style: none; }
+.home .post-list > li { padding-bottom: 10px; border-bottom: 1px solid #CCC; margin-bottom: 15px; }
 .home .post-list .post-title { font-size: 28px; font-weight: normal; margin: 0; }
 .home .post-list .post-meta { font-size: 14px; color: #666; margin: 0 20px; margin-bottom: .5em; }
 .home .post-list .post-excerpt { margin: 0 20px; }
 .home .post-list .post-excerpt, .home .post-list .post-excerpt * { font-size: 14px; padding-top: 0; padding-bottom: 0; color: #333; }
 .home .post-list .post-excerpt code, .home .post-list .post-excerpt pre, .home .post-list .post-excerpt pre * { color: #666; background-color: #eee; }
 .home .post-list .post-excerpt th { border-color: #ccc; background-color: #ccc; }
-.home .post-list .post-excerpt a { color: #069; }
+.home .post-list .post-excerpt a { color: #000; }
 .home .post-list .post-excerpt img { display: block; margin: 1em auto; max-height: 16em; opacity: .7; transition: opacity .3s; }
 .home .post-list .post-excerpt img:hover { opacity: 1; }
 @media screen and (max-width: 600px) { .home .post-list { padding: 10px; } }

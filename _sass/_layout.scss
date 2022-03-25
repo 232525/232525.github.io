@@ -31,7 +31,7 @@ body {
 		color: $header-fg;
 		text-decoration: none;
 		font-size: $base-font-size;
-		line-height: $base-font-size * 2;
+		line-height: $base-font-size*2;
 	}
 	.site-nav {
 		text-align:right;
@@ -103,7 +103,7 @@ $hide-sidebar-screen-width: 1120px;
 			height: 100%;
 			right: 0;
 			top: 0;
-			background: #EEE;
+			background: #DDDDDD;
 		}
 	}
 	
@@ -122,6 +122,7 @@ $hide-sidebar-screen-width: 1120px;
 	animation: ebani-descend ease .5s 1;
 	h1, h2, h3, h4, .post-meta, .rss-link {
 		animation: ebani-ascend ease .5s 1;
+		line-height: 20px;
 	}
 	article, .post-excerpt {
 		table, pre, img {
@@ -135,12 +136,13 @@ $hide-sidebar-screen-width: 1120px;
 	float: right;
 	width: $col-secnod-width;
 	padding: 20px;
-	background: #EEE;
+	background: #DDDDDD;
 	z-index: 10;
 }
 .col-box{
-	color: #666;
+	// color: #666;
 	font-size: $small-font-size;
+	// margin-bottom: 20px;
 	padding-bottom: 20px;
 	
 	p {
@@ -190,14 +192,15 @@ $hide-sidebar-screen-width: 1120px;
 .col-box-author {
 	text-align: center;
 	.avatar {
-		width: 135px;
-		height: 135px;
+		width: 200px;
+		height: 200px;
 		border-radius: 100%;
 		margin: 20px auto;
 		display: block;
 	}
 	.name {
 		font-size: $base-font-size;
+		font-weight: bold;
 	}
 	.contact {
 		margin-top: 10px;
@@ -208,13 +211,19 @@ $hide-sidebar-screen-width: 1120px;
 			text-decoration: none;
 			border-radius: 5px;
     		white-space: nowrap;
-			
+
 			&:hover {
 				transition: background 0.3s ease;
 				background: #666;
 			}
 		}
 	}
+}
+.social_link {
+	font-size: $small-font-size;
+	line-height: 25px;
+	// margin-top: 20px;
+	// margin-bottom: 20px;
 }
 
 // footer

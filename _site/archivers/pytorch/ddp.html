@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>PyTorch单机多卡训练（DDP-DistributedDataParallel的使用）备忘记录 « 王义宇</title>
+  <meta name="description" content="不做具体的原理分析和介绍（因为我也不咋懂），针对我实际修改可用的一个用法介绍，主要是模型训练入口主函数（main_multi_gpu.py）的四处修改。以上的介绍来源https://zhuanlan.zhihu.com/p/2064678520. 概述使用DDP进行单机多卡训练时，通过多进程在多个GPU上复制模型...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/archivers/pytorch/ddp">
+  <link rel="alternate" type="application/rss+xml" title="王义宇" href="http://localhost:4000/feed.xml" />
+</head>
+
+
+  <body>
+
+    <div class="header-placeholder"></div>
+<header class="header">
+  <div class="wrapper">
+    <div id="sidebar-toggle">TOC</div>
+    <a class="site-title" href="/">王义宇</a>
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/">Home</a>
+      
+        
+        <a class="page-link" href="/blogs/">Blogs</a>
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+    </nav>
+  </div>
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="col-main">
+          <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">PyTorch单机多卡训练（DDP-DistributedDataParallel的使用）备忘记录</h1>
+    <p class="post-meta">Dec 23, 2021</p>
+  </header>
+
+  <article class="post-content">
+    <p>不做具体的原理分析和介绍（因为我也不咋懂），针对我实际修改可用的一个用法介绍，主要是模型训练入口主函数（main_multi_gpu.py）的四处修改。
+<img src="https://img-blog.csdnimg.cn/b4875bde1e7d45e5b6443b4104b59b70.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBAQ3VyeWE=,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述" />
+以上的介绍来源<a href="https://zhuanlan.zhihu.com/p/206467852">https://zhuanlan.zhihu.com/p/206467852</a></p>
+
+<h1 id="0-概述">0. 概述</h1>
+<p>使用DDP进行单机多卡训练时，通过多进程在多个GPU上复制模型，每个GPU都由一个进程控制，同时需要将参数<code class="language-plaintext highlighter-rouge">local_rank</code>传递给进程，用于表示当前进程使用的是哪一个GPU。</p>
+
+<p>要将单机单卡训练修改为基于DDP的单机多卡训练，需要进行的修改如下（总共四处需要修改）：</p>
+<ol>
+  <li>初始化设置，需要设置<code class="language-plaintext highlighter-rouge">local_rank</code>参数，并需要将<code class="language-plaintext highlighter-rouge">local_rank</code>参数传递到进程中，如下：
+```python
+    <h1 id="在参数设置中添加local_rank参数见parse_args函数">在参数设置中添加local_rank参数，见parse_args()函数</h1>
+    <h1 id="运行时无需指定local_rank参数但必须在此处进行定义">运行时无需指定local_rank参数，但必须在此处进行定义</h1>
+    <p>parser.add_argument(“–local_rank”, type=int, default=0)</p>
+  </li>
+</ol>
+
+<h1 id="将local_rank参数传入到进程中见init_distributed_mode函数">将local_rank参数传入到进程中，见init_distributed_mode()函数</h1>
+<h1 id="local_rank表示当前gpu编号">local_rank：表示当前GPU编号</h1>
+<h1 id="local_world_size使用的gpu数量">local_world_size：使用的GPU数量</h1>
+<p>torch.cuda.set_device(local_rank)
+torch.distributed.init_process_group(
+	backend=’nccl’,
+	init_method=’env://’,
+	world_size=local_world_size,
+	rank=local_rank
+)</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2. DataLoader修改，需要使用`torch.utils.data.DistributedSampler`对数据集进行划分（把所有数据划分给不同的GPU），用于多个GPU单独的数据读取：
+此处，Dataset --&gt; DistributedSampler --&gt; BatchSampler --&gt; DataLoader
+此外，Dataset、Sampler、DataLoader的关系可参考博文[一文弄懂Pytorch的DataLoader, DataSet, Sampler之间的关系](https://www.cnblogs.com/marsggbo/p/11308889.html)，我觉得写的还挺清楚的（__大概可以总结为，Dataset包含了所有的数据，Sampler指明了需要用到的数据的index，DataLoader根据Sampler从Dataset中提取数据用于训练__）
+```python
+# 见setup_loader()函数中修改
+"""
+# 从数据集中采样划分出每块GPU所用的数据，组织形式为数据的index，如下：
+	32104
+	99491
+	11488
+	25070
+	67216
+	22453
+	57418
+	45591
+	64625
+	46036
+	98404
+	81477
+"""
+self.sampler_train = torch.utils.data.DistributedSampler(
+	xx_set
+)
+"""
+# 将每个GPU所用的数据，按照BATCH_SIZE进行组织，组织形式为数据index的list，list长度即为BATCH_SIZE，如下：
+	[32104, 99491, 11488, 25070, 67216, 22453, 57418, 45591, 64625, 46036]
+	[98404, 81477, 73638, 22696, 82657, 44563, 106537, 15772, 85536, 38823]
+	......
+"""
+batch_sampler_train = torch.utils.data.BatchSampler(
+	self.sampler_train, 
+	batch_size=cfg.TRAIN.BATCH_SIZE, 
+	drop_last=cfg.DATA_LOADER.DROP_LAST
+)
+# 根据batch_sampler_train（数据index）从xx_set数据集中提取出真实数据用于训练
+self.training_loader = torch.utils.data.DataLoader(
+	self.xx_set, # 数据集
+	batch_sampler=batch_sampler_train, # 该GPU分配到的数据（以batch为单位组织）
+	collate_fn=datasets.data_loader.sample_collate,  # 一个batch数据的组织方式
+	pin_memory = cfg.DATA_LOADER.PIN_MEMORY,
+	num_workers=cfg.DATA_LOADER.NUM_WORKERS
+)
+</code></pre></div></div>
+<ol>
+  <li>模型初始化设置，使用<code class="language-plaintext highlighter-rouge">torch.nn.parallel.DistributedDataParallel</code>对模型进行包装，需要传入<code class="language-plaintext highlighter-rouge">local_rank</code>参数
+    <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># 使用torch.nn.parallel.DistributedDataParallel对模型进行包装，同时传入local_rank参数，表明模型是在哪一块GPU上
+</span><span class="bp">self</span><span class="p">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">parallel</span><span class="p">.</span><span class="n">DistributedDataParallel</span><span class="p">(</span>
+ <span class="n">model</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">device</span><span class="p">),</span>
+ <span class="n">device_ids</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">local_rank</span><span class="p">]</span>  <span class="c1"># 传入`local_rank`参数，即GPU编号
+</span><span class="p">)</span>
+</code></pre></div>    </div>
+  </li>
+  <li>模型训练代码修改，训练过程中每开始新的epoch，基于<code class="language-plaintext highlighter-rouge">torch.utils.data.BatchSampler</code>创建的<code class="language-plaintext highlighter-rouge">self.sampler_train</code>都需要调用<code class="language-plaintext highlighter-rouge">set_epoch(epoch_num)</code>对训练集数据进行shuffle；并且需要调用<code class="language-plaintext highlighter-rouge">torch.distributed.barrier()</code>。见<code class="language-plaintext highlighter-rouge">train()</code>函数中修改内容
+如果不使用<code class="language-plaintext highlighter-rouge">BatchSampler</code>而直接使用Dataset –&gt; DistributedSampler –&gt; DataLoader（需要在DataLoader中指定batch_size参数），应该不用调用<code class="language-plaintext highlighter-rouge">set_epoch(epoch_num)</code>？（不确定，没试过）。</li>
+</ol>
+
+<h1 id="1-单机多卡训练代码修改">1. 单机多卡训练代码修改</h1>
+<p>模型训练入口主函数文件组织大致如下：</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># main_multi_gpu.py
+# 导入相关包
+</span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">...</span>
+
+<span class="c1"># 训练器定义
+</span><span class="k">class</span> <span class="nc">Trainer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Trainer</span><span class="p">,</span> <span class="bp">self</span><span class="p">).</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="c1"># 固定随机数种子
+</span>        <span class="p">...</span>
+
+		<span class="c1"># 判断是否为多卡训练
+</span>		<span class="bp">self</span><span class="p">.</span><span class="n">num_gpus</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="n">device_count</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">num_gpus</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        
+        <span class="c1"># 针对单机多卡训练，进行初始化
+</span>        <span class="c1"># 单机单卡训练无需此操作
+</span>        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span><span class="p">:</span>
+        	<span class="c1"># 获取该进程的local_rank，数值和args.local_rank一致
+</span>            <span class="bp">self</span><span class="p">.</span><span class="n">local_rank</span> <span class="o">=</span> <span class="n">init_distributed_mode</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">"cuda"</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">num_gpus</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">"cpu"</span><span class="p">)</span>
+            
+        <span class="c1"># 训练集构建
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">setup_dataset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">setup_loader</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># 0表示初始epoch
+</span>        <span class="c1"># 模型结构构建
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">setup_network</span><span class="p">()</span>
+        <span class="c1"># 一些无关的初始化操作
+</span>        <span class="p">...</span>
+        
+	<span class="k">def</span> <span class="nf">setup_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="p">.</span><span class="n">xx_set</span> <span class="o">=</span> <span class="p">...</span>  <span class="c1"># 创建训练集
+</span>
+	<span class="k">def</span> <span class="nf">setup_loader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">sampler_train</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">DistributedSampler</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">xx_set</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">sampler_train</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">RandomSampler</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">xx_set</span>
+            <span class="p">)</span>
+        <span class="n">batch_sampler_train</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">BatchSampler</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">sampler_train</span><span class="p">,</span> 
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">cfg</span><span class="p">.</span><span class="n">TRAIN</span><span class="p">.</span><span class="n">BATCH_SIZE</span><span class="p">,</span> 
+            <span class="n">drop_last</span><span class="o">=</span><span class="n">cfg</span><span class="p">.</span><span class="n">DATA_LOADER</span><span class="p">.</span><span class="n">DROP_LAST</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">training_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">DataLoader</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">xx_set</span><span class="p">,</span>
+            <span class="n">batch_sampler</span><span class="o">=</span><span class="n">batch_sampler_train</span><span class="p">,</span>
+            <span class="n">collate_fn</span><span class="o">=</span><span class="n">datasets</span><span class="p">.</span><span class="n">data_loader</span><span class="p">.</span><span class="n">sample_collate</span><span class="p">,</span>  <span class="c1"># 
+</span>            <span class="n">pin_memory</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">DATA_LOADER</span><span class="p">.</span><span class="n">PIN_MEMORY</span><span class="p">,</span>
+            <span class="n">num_workers</span><span class="o">=</span><span class="n">cfg</span><span class="p">.</span><span class="n">DATA_LOADER</span><span class="p">.</span><span class="n">NUM_WORKERS</span>
+        <span class="p">)</span>
+		
+	<span class="k">def</span> <span class="nf">setup_netword</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">model</span> <span class="o">=</span> <span class="p">...</span>  <span class="c1"># 构建模型结构
+</span>		<span class="c1"># DDP模型
+</span>		<span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">parallel</span><span class="p">.</span><span class="n">DistributedDataParallel</span><span class="p">(</span>
+                <span class="n">model</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">device</span><span class="p">),</span>
+                <span class="n">device_ids</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">local_rank</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">parallel</span><span class="p">.</span><span class="n">DataParallel</span><span class="p">(</span><span class="n">model</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">device</span><span class="p">)</span>
+
+		<span class="c1"># 一些不太相关的操作，比如损失函数、模型训练优化器的设置
+</span>		<span class="bp">self</span><span class="p">.</span><span class="n">xe_criterion</span> <span class="o">=</span> <span class="p">...</span> <span class="c1"># 模型训练交叉熵损失
+</span>		<span class="bp">self</span><span class="p">.</span><span class="n">optim</span> <span class="o">=</span> <span class="p">...</span>  <span class="c1"># 模型训练优化器
+</span>        <span class="p">...</span>
+
+	<span class="c1"># 模型训练核心
+</span>	<span class="k">def</span> <span class="nf">train</span><span class="p">():</span>
+		<span class="bp">self</span><span class="p">.</span><span class="n">model</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+		<span class="c1"># 训练过程Epoch循环
+</span>		<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">MAX_EPOCH</span><span class="p">):</span>
+			<span class="c1"># 如果是单机多卡训练，需要调用set_epoch，将数据进行shuffle
+</span>            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">sampler_train</span><span class="p">.</span><span class="n">set_epoch</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
+            <span class="c1"># 每个Epoch训练过程中的iteration循环
+</span>            <span class="k">for</span> <span class="n">_data_</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">training_loader</span><span class="p">:</span>
+            	<span class="c1"># 1 模型前向运算，并计算损失
+</span>            	<span class="n">loss</span> <span class="o">=</span> <span class="p">...</span>
+            	<span class="c1"># 2 梯度清零
+</span>            	<span class="bp">self</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            	<span class="c1"># 3 计算新梯度，并进行梯度裁减（梯度裁减为可选操作）
+</span>            	<span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">()</span>
+            	<span class="c1"># 4 梯度反传，模型参数更新
+</span>            	<span class="bp">self</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+            	
+				<span class="c1"># 又是一些不太相关的操作，比如优化器lr衰减
+</span>				<span class="p">...</span>
+				
+				<span class="c1"># 进程间数据同步？（不确定是不是必须操作）
+</span>				<span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span><span class="p">:</span>
+                	<span class="n">torch</span><span class="p">.</span><span class="n">distributed</span><span class="p">.</span><span class="n">barrier</span><span class="p">()</span>
+        	<span class="c1"># 又是一些不太相关的操作，比如模型的保存，模型的验证
+</span>        	<span class="p">...</span>
+        	<span class="c1"># 进程间数据同步？
+</span>			<span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">distributed</span><span class="p">:</span>
+                <span class="n">torch</span><span class="p">.</span><span class="n">distributed</span><span class="p">.</span><span class="n">barrier</span><span class="p">()</span>
+
+<span class="c1"># 参数
+</span><span class="k">def</span> <span class="nf">parse_args</span><span class="p">():</span>
+    <span class="s">'''
+    Parse input arguments
+    '''</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="p">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">'Image Captioning'</span><span class="p">)</span>
+    <span class="c1"># 模型训练所需一些参数
+</span>    <span class="p">...</span>
+    <span class="c1"># DDP训练所需参数，--local_rank，不加它也有办法能跑起来，但是还是加了更规范一点
+</span>    <span class="n">parser</span><span class="p">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">"--local_rank"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">parser</span><span class="p">.</span><span class="n">print_help</span><span class="p">()</span>
+        <span class="n">sys</span><span class="p">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">args</span>
+
+<span class="c1"># 以下两个函数参考了DETR
+# 禁用非主进程的输出
+</span><span class="k">def</span> <span class="nf">setup_for_distributed</span><span class="p">(</span><span class="n">is_master</span><span class="p">):</span>
+    <span class="s">"""
+    This function disables printing when not in master process
+    """</span>
+    <span class="kn">import</span> <span class="nn">builtins</span> <span class="k">as</span> <span class="n">__builtin__</span>
+    <span class="n">builtin_print</span> <span class="o">=</span> <span class="n">__builtin__</span><span class="p">.</span><span class="k">print</span>
+
+    <span class="k">def</span> <span class="nf">print</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">force</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="s">'force'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_master</span> <span class="ow">or</span> <span class="n">force</span><span class="p">:</span>
+            <span class="n">builtin_print</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">__builtin__</span><span class="p">.</span><span class="k">print</span> <span class="o">=</span> <span class="k">print</span>
+
+<span class="k">def</span> <span class="nf">init_distributed_mode</span><span class="p">():</span>
+    <span class="c1"># 获取GPU编号
+</span>    <span class="c1"># 初始化时使用get_rank()报错，难道只能初始化之后才能正常调用获取local_rank值？
+</span>    <span class="c1"># local_rank = torch.distributed.get_rank()
+</span>    <span class="c1"># local_world_size = torch.distributed.get_world_size()
+</span>    
+    <span class="c1"># 也可以传入args，通过args.local_rank获取local_rank值 （即当前GPU编号）
+</span>    <span class="c1"># 通过torch.cuda.device_count()获取local_world_size值 （即GPU数量）
+</span>    <span class="k">if</span> <span class="s">'RANK'</span> <span class="ow">in</span> <span class="n">os</span><span class="p">.</span><span class="n">environ</span> <span class="ow">and</span> <span class="s">'WORLD_SIZE'</span> <span class="ow">in</span> <span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="n">local_rank</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="s">"RANK"</span><span class="p">])</span>
+        <span class="n">local_world_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="s">'WORLD_SIZE'</span><span class="p">])</span>
+        <span class="n">local_gpu</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="s">'LOCAL_RANK'</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">'Error when get init distributed settings!'</span><span class="p">)</span>
+        <span class="k">return</span>
+    
+    <span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="n">set_device</span><span class="p">(</span><span class="n">local_rank</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'| distributed init (rank {}): env://'</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">local_rank</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">torch</span><span class="p">.</span><span class="n">distributed</span><span class="p">.</span><span class="n">init_process_group</span><span class="p">(</span>
+        <span class="n">backend</span><span class="o">=</span><span class="s">'nccl'</span><span class="p">,</span>
+        <span class="n">init_method</span><span class="o">=</span><span class="s">'env://'</span><span class="p">,</span>
+        <span class="n">world_size</span><span class="o">=</span><span class="n">local_world_size</span><span class="p">,</span> <span class="c1"># 所有的进程数，及GPU数量
+</span>        <span class="n">rank</span><span class="o">=</span><span class="n">local_rank</span>
+    <span class="p">)</span>
+    <span class="n">torch</span><span class="p">.</span><span class="n">distributed</span><span class="p">.</span><span class="n">barrier</span><span class="p">()</span>
+    <span class="c1"># 禁用非主进程的输出，local_rank为0的进程作为主进程
+</span>    <span class="n">setup_for_distributed</span><span class="p">(</span><span class="n">local_rank</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># 返回GPU编号
+</span>    <span class="k">return</span> <span class="n">local_rank</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="p">.</span><span class="n">folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">cfg_from_file</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">.</span><span class="n">folder</span><span class="p">,</span> <span class="s">'config.yml'</span><span class="p">))</span>
+    <span class="n">cfg</span><span class="p">.</span><span class="n">ROOT_DIR</span> <span class="o">=</span> <span class="n">args</span><span class="p">.</span><span class="n">folder</span>
+
+    <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">trainer</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+</code></pre></div></div>
+<p>单机单卡训练（<code class="language-plaintext highlighter-rouge">--*** ***</code>表示模型训练所需传入的其他参数）</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span>0 python main_multi_gpu.py <span class="nt">--</span><span class="k">***</span> <span class="k">***</span>
+</code></pre></div></div>
+<p>单机多卡训练，无需指定<code class="language-plaintext highlighter-rouge">--local_rank</code>参数，使用<code class="language-plaintext highlighter-rouge">torch.distributed.launch</code>可以自动指定相关参数，在代码中可以从<code class="language-plaintext highlighter-rouge">os.environ</code>中获取相关参数（见<code class="language-plaintext highlighter-rouge">init_distributed_mode()</code>函数），但是必须得设置<code class="language-plaintext highlighter-rouge">parser.add_argument("--local_rank", type=int, default=0)</code></p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span>0,1 python <span class="nt">-m</span> torch.distributed.launch <span class="nt">--master_port</span><span class="o">=</span>3141 <span class="nt">--nproc_per_node</span> 2 main_multi_gpu.py <span class="nt">--</span><span class="k">***</span> <span class="k">***</span>
+</code></pre></div></div>
+
+<h1 id="参考">参考：</h1>
+<p><a href="https://www.cnblogs.com/marsggbo/p/11308889.html">[1] 一文弄懂Pytorch的DataLoader, DataSet, Sampler之间的关系</a>
+<a href="https://zhuanlan.zhihu.com/p/206467852">[2] DataParallel &amp; DistributedDataParallel分布式训练</a>
+<a href="https://zhuanlan.zhihu.com/p/178402798">[3] [原创][深度][PyTorch] DDP系列第一篇：入门教程</a>
+<a href="https://github.com/facebookresearch/detr">[4] DETR源码 https://github.com/facebookresearch/detr</a></p>
+
+  </article>
+  
+  
+
+
+
+
+</div>
+
+        </div>
+        <div class="col-second">
+          <div class="col-box col-box-author">
+  <img class="avatar" src="/assets/skr.jpg" alt="Yiyu Wang">
+  <div class="col-box-title name">Yiyu Wang</div>
+  <p>没人枪毙你，你就活着！</p>
+</div>
+
+<div class="col-box">
+  
+  <ul>
+    <p class="social_link">
+      <svg class="octicon octicon-organization" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M1.5 14.25c0 .138.112.25.25.25H4v-1.25a.75.75 0 01.75-.75h2.5a.75.75 0 01.75.75v1.25h2.25a.25.25 0 00.25-.25V1.75a.25.25 0 00-.25-.25h-8.5a.25.25 0 00-.25.25v12.5zM1.75 16A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.055.703c.487.325.779.871.779 1.456v5.965A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3zM3 3.75A.75.75 0 013.75 3h.5a.75.75 0 010 1.5h-.5A.75.75 0 013 3.75zM3.75 6a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5zM3 9.75A.75.75 0 013.75 9h.5a.75.75 0 010 1.5h-.5A.75.75 0 013 9.75zM7.75 9a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5zM7 6.75A.75.75 0 017.75 6h.5a.75.75 0 010 1.5h-.5A.75.75 0 017 6.75zM7.75 3a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5z"></path></svg>
+      UCAS (中国科学院大学)
+    </p>
+  </ul>
+  
+
+  
+  <ul>
+    <p class="social_link">
+    <svg class="octicon octicon-location" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.536 3.464a5 5 0 010 7.072L8 14.07l-3.536-3.535a5 5 0 117.072-7.072v.001zm1.06 8.132a6.5 6.5 0 10-9.192 0l3.535 3.536a1.5 1.5 0 002.122 0l3.535-3.536zM8 9a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+    Beijing, China
+    </p>
+  </ul>
+  
+
+  
+  <ul>
+    <p class="social_link">
+    <svg class="octicon octicon-mail" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true">
+      <path fill-rule="evenodd" d="M1.75 2A1.75 1.75 0 000 3.75v.736a.75.75 0 000 .027v7.737C0 13.216.784 14 1.75 14h12.5A1.75 1.75 0 0016 12.25v-8.5A1.75 1.75 0 0014.25 2H1.75zM14.5 4.07v-.32a.25.25 0 00-.25-.25H1.75a.25.25 0 00-.25.25v.32L8 7.88l6.5-3.81zm-13 1.74v6.441c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V5.809L8.38 9.397a.75.75 0 01-.76 0L1.5 5.809z"></path>
+    </svg>
+    <a href="mailto:wangyiyu18@mails.ucas.ac.cn">wangyiyu18@mails.ucas.ac.cn</a>
+    </p>
+  </ul>
+  
+
+  
+  <ul>
+    <p class="social_link">
+    <svg aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="16" height="16"  data-view-component="true" class="octicon octicon-mark-github v-align-middle">
+      <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+    </svg>
+    <a href="https://github.com/232525">https://github.com/232525</a>
+    </p>
+  </ul>
+  
+</div>
+
+<div class="col-box">
+  <ul class="post-list">
+    
+      <li><a class="post-link" href="/archivers/enviroments/jupyter-lab">Jupyter Lab配置远程访问及虚拟环境</a></li>
+    
+      <li><a class="post-link" href="/archivers/pytorch/ddp">PyTorch单机多卡训练（DDP-DistributedDataParallel的使用）备忘记录</a></li>
+    
+  </ul>
+</div>
+
+<div class="col-box post-toc hide">
+  <div class="col-box-title">TOC</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+<div class="wrapper">
+&copy; 2022 枯涯
+</div>
+</footer>
+
+<script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});</script>
+<script src="/js/easybook.js"></script>
+
+
+  </body>
+
+</html>

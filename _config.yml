@@ -1,21 +1,24 @@
 # Site settings
-title: Curya's Pages
-url: "http://232525.github.io"    # the protocol and hostname of your site, eg. `http://laobubu.github.io`
+title: 王义宇
+url: "http://localhost:4000/"    # the protocol and hostname of your site, eg. `http://laobubu.github.io`
 baseurl: "" # the prefix of your site uri, eg. `"/jekyll-theme-EasyBook"` or empty string `""`
-#timezone: Asia/Chongqing
+timezone: Asia/Chongqing
 description: >
   One or more sentences introducing this blog.
 
 # Your information
 email:
 author: Yiyu Wang
-avatar: "assets/skr.jpg"
-profile: 没人枪毙你，你就活着.
-school: University of Chinese Academy of Sciences
+author_cn: 枯涯
+avatar: "/assets/skr.jpg"
+profile: 没人枪毙你，你就活着！
+# school: University of Chinese Academy of Sciences
 #twitter_username: twitter_username
 github_username:
 profile_links:
-  Email: "mailto:wangyiyu18@mails.ucas.ac.cn"
+  School: "UCAS (中国科学院大学)"
+  Location: "Beijing, China"
+  Email: "wangyiyu18@mails.ucas.ac.cn"
   GitHub: "https://github.com/232525"
   # You can add more profile links above, or edit _includes/sidebar.html 
 
@@ -28,7 +31,9 @@ excerpt_separator: <!--more-->
 
 header:
   links:             # Links on the header. Link to in-site page with a slash as prefix
-    # About: ""
+    Home:  "/"
+    Blogs: "/blogs/"
+    About: "/about/"
 
 # permalink: /archivers/:title
 plugins:
@@ -37,8 +42,8 @@ plugins:
  - jemoji
 
 # Build settings
-paginate: 5
-paginate_path: "page:num"
+# paginate: 5
+# paginate_path: "page:num"
 
 highlighter: rouge
 markdown: kramdown

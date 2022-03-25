@@ -4,11 +4,12 @@
     	margin-bottom: 40px;
     	padding: 20px;
         .post-title {
-        	font-size:40px;
+        	font-size:32px;
         	font-weight: normal;
-        	margin: 0 -100px;
+            margin: 0 -110px;
+            margin-bottom: 0 -20px;
         	@include media-query($on-palm) {
-        		font-size: 34px;
+        		font-size: 30px;
         	}
         }
         .post-meta {
@@ -24,6 +25,7 @@
     }
     .post-content {
         color: #333;
+        padding: 0px 15px;
         
         h1,h2,h3,h4,h5,h6 {
             color: #000;

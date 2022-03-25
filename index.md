@@ -2,7 +2,7 @@
 layout: default
 ---
 
-## Welcome to Curya's Pages
+## Welcome to Yiyu Wang's Pages
 ---
 
 ## Biography
