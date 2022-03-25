@@ -1,5 +1,5 @@
 ## Yiyu Wang's Pages
-Visit [232525.github.io](232525.github.io)
+Visit [https://232525.github.io](https://232525.github.io)
 
 ![homepage](assets/HomePages.png)
 
