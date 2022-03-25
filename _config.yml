@@ -32,7 +32,7 @@ excerpt_separator: <!--more-->
 header:
   links:             # Links on the header. Link to in-site page with a slash as prefix
     Home:  "/"
-    Blogs: "/blogs/"
+    Blogs: "/about/"
     About: "/about/"
 
 # permalink: /archivers/:title
