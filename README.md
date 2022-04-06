@@ -11,5 +11,8 @@ bundle install
 bundle exec jekyll serve
 ```
 
+## deployment
+Refer to [official guides](https://chirpy.cotes.page/posts/getting-started/#deployment).
+
 ## Acknowledgements
-Based on [laobubu/jekyll-theme-EasyBook](https://github.com/laobubu/jekyll-theme-EasyBook).
+Based on [cotes2020/jekyll-theme-chirpy](https://github.com/cotes2020/jekyll-theme-chirpy) and [cotes2020/chirpy-starter](https://github.com/cotes2020/chirpy-starter/).
