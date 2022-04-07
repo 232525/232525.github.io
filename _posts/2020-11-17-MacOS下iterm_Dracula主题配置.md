@@ -23,6 +23,7 @@ mermaid: true
 ```shell
 brew install wget
 ```
+
 # 1 安装iterm2
 前往[iterm2官网](https://iterm2.com/)下载安装
 
