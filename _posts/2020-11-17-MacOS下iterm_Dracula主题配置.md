@@ -38,6 +38,14 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools
 # fetch下载
 sh -c "$(fetch -o - https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 ```
+配置文件的备份与创建
+```bash
+# 备份原配置文件
+cp ~/.zshrc ~/.zshrc_bp
+# 创建新的配置文件
+cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc
+```
+Note: 如果在这之前安装了Anaconda，可能需要将原配置文件中的环境变量设置拷贝到新的配置文件中。
 
 # 3 安装PowerLine
 ```shell
@@ -73,6 +81,7 @@ git clone https://github.com/dracula/zsh.git
 # 复制文件
 cp ./zsh/dracula.zsh-theme ~/.oh-my-zsh/themes/
 # 参考GitHub仓库issue#11，https://github.com/dracula/zsh/issues/11
+cd ./zsh/
 cp -r ./lib/ ~/.oh-my-zsh/themes/
 ```
 安装完成之后，需要修改~/.zshrc文件，参见[https://draculatheme.com/zsh](https://draculatheme.com/zsh)，如下：
