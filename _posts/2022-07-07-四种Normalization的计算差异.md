@@ -22,6 +22,7 @@ Refs:
 
 ## 1. BatchNorm2d
 API: [CLASS torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True, device=None, dtype=None)](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html?highlight=batchnorm2d#torch.nn.BatchNorm2d)
+
 $$y=\frac{x-\text{E}[x]}{\sqrt{\text{Var}[x] + \epsilon}} * \gamma + \beta$$
 
 + 输入:  [N, C, H, W]
@@ -85,10 +86,12 @@ tensor([[[ 0.5701,  1.3119,  0.6911, -1.5281],
 
 ## 2. LayerNorm
 API: [CLASS torch.nn.LayerNorm(normalized_shape, eps=1e-05, elementwise_affine=True, device=None, dtype=None)](https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html?highlight=layernorm#torch.nn.LayerNorm)
+
 $$y=\frac{x-\text{E}[x]}{\sqrt{\text{Var}[x] + \epsilon}} * \gamma + \beta$$
 
 __在CHW上计算均值与方差，示例代码如下：__
 +  如果输入是 [N, C, H, W]形式，即API示例中的Image Example
+
 ```python
 N, C, H, W = 3, 5, 2, 2
 x = torch.rand(N, C, H, W)
@@ -142,7 +145,9 @@ tensor([[[ 0.6501,  1.5364,  0.7946, -1.8568],
          [-0.3637,  1.4651,  1.2060,  1.1581]]])
 """
 ```
+
 + 如果输入是 [N, L, C]形式，即API示例中的NLP Example（图像描述中通常是这种数据组织形式），则均值和方差均在C上进行求取，即在输入数据的最后一维上求均值和方差
+
 ```python
 N, L, C = 3, 4, 5
 x = torch.rand(N, L, C)
@@ -191,12 +196,14 @@ tensor([[[-0.2380, -0.2267,  1.9469, -0.7811, -0.7011],
 
 ## 3. InstanceNorm2d
 API: [CLASS torch.nn.InstanceNorm2d(num_features, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False, device=None, dtype=None)](https://pytorch.org/docs/stable/generated/torch.nn.InstanceNorm2d.html?highlight=instancenorm2d#torch.nn.InstanceNorm2d)
+
 $$y=\frac{x-\text{E}[x]}{\sqrt{\text{Var}[x] + \epsilon}} * \gamma + \beta$$
 
 + 输入: [N, C, H, W]
 + 输出: [N, C, H, W] (与输入维度一致)
 
 __在HW上求均值和方差，代码示例如下：__
+
 ```python
 N, C, H, W = 3, 5, 2, 2
 x = torch.rand(N, C, H, W)
@@ -251,6 +258,7 @@ tensor([[[ 1.5311,  0.2455, -0.9808, -0.7958],
 
 ## 4. GroupNorm
 API: [CLASS torch.nn.GroupNorm(num_groups, num_channels, eps=1e-05, affine=True, device=None, dtype=None)](https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html?highlight=groupnorm#torch.nn.GroupNorm)
+
 $$y=\frac{x-\text{E}[x]}{\sqrt{\text{Var}[x] + \epsilon}} * \gamma + \beta$$
 
 + 输入: [N, C, *]
