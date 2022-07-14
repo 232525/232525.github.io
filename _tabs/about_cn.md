@@ -22,7 +22,7 @@ __教育经历__\
 
 ### 论文发表
 ---
-+ __Yiyu Wang__, Jungang Xu, Yingfei Sun, __"End-to-End Transformer Based Model for Image Captioning"__, AAAI Conference on Artificial Intelligence (AAAI), 2022 [[PDF/Arxiv]](https://arxiv.org/abs/2203.15350) [[Code]](https://github.com/232525/PureT)
++ __Yiyu Wang__, Jungang Xu, Yingfei Sun, __"End-to-End Transformer Based Model for Image Captioning"__, AAAI Conference on Artificial Intelligence (AAAI), 2022 [[PDF/AAAI]](https://ojs.aaai.org/index.php/AAAI/article/view/20160) [[PDF/Arxiv]](https://arxiv.org/abs/2203.15350) [[Code]](https://github.com/232525/PureT)
 + __Yiyu Wang__, Jungang Xu, Yingfei Sun, __"A visual persistence model for image captioning"__, Neurocomputing, 2022 [[PDF]](https://www.sciencedirect.com/science/article/pii/S0925231221014922?via%3Dihub)
 
 ### 获奖情况
