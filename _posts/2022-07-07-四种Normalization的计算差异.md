@@ -17,7 +17,7 @@ Refs:
 + Instance Normalization：在图像像素上，对HW做归一化，多用于风格化迁移；
 + Group Normalization：将Channel分组-->[B, g, C//g, H, W]，然后再对后三个维度做归一化（和InstanceNorm和LayerNorm都相似之处）；
 
-![不同Normalization图示](https://img-blog.csdnimg.cn/a353c10b59724d38adc51a3a3a77fab5.png)
+![不同Normalization图示](https://s2.loli.net/2023/05/15/DdtaPL7xqcnASGy.png)
 
 以下针对Pytorch中不同Normalizaiotn计算示例，均忽略可学习的仿射变换参数$\gamma$和$\beta$。
 
