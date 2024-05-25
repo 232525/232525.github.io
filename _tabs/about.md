@@ -7,7 +7,6 @@ order: 4
 ### Biography
 ---
 [[New Homepage](https://curya-wangyiyu.github.io)] \
-[[个人简历.pdf](/files/Resume_Campus_Recruitment.pdf)] \
 I am a PhD student in School of Electronic, Electrical and Communication Engineering, [University of Chinese Academy of Sciences](http://english.ucas.ac.cn/). My supervisors are Prof. [Yingfei Sun](http://people.ucas.ac.cn/~yfsun) and Prof. [Jungang Xu](http://ccip.ucas.ac.cn/team/professor/%e5%be%90%e4%bf%8a%e5%88%9a/). I received a B.S. degree from the College of Information Engineering at Northwest A&F University, Shaanxi, China in June 2018.
 
 My research interests include computer vision and multimodal learning, specifically for image captioning.

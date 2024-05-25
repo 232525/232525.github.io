@@ -6,8 +6,8 @@ order: 5
 
 ### 基本信息
 ---
-姓名: 王义宇（[个人简历.pdf](/files/Resume_Campus_Recruitment.pdf)）\
-电子邮件：curya_wyy@163.com, wangyiyu18@mails.ucas.ac.cn\
+姓名: 王义宇 [[新主页](https://curya-wangyiyu.github.io/about_cn)] \
+电子邮件：curya_wyy@foxmail.com, wangyiyu18@mails.ucas.ac.cn\
 通信地址：北京市怀柔区怀北镇中国科学院雁栖湖校区\
 邮政编码：101408\
 导师：孙应飞，徐俊刚
