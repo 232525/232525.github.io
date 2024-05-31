@@ -4,4 +4,4 @@ icon: fa fa-user-circle
 order: 5
 ---
 
-[新主页](https://curya-wangyiyu.github.io/about_cn)
+跳转至[新主页](https://curya-wangyiyu.github.io/about_cn)
