@@ -12,6 +12,7 @@ mermaid: true
 
 **核心：**
 - **光学2D映射（optical 2D mapping） --> 上下文压缩**
+    - 一页包含1000个单词的图像，其视觉编码所需的**视觉tokens数**可以远小于编码该1000个单词所需的**文本tokens数**
 - 模型构成：Encoder-Decoder结构
     - DeepEncoder - 在高分辨率输入下保持低激活，同时实现高压缩比，以确保最佳且可管理的视觉tokens数量。【token数量控制 - 文本token转视觉token】
     - DeepSeek3B-MoE-A570M
@@ -88,6 +89,40 @@ xxx
 - **文本数据**
 
 ### 3.5 训练流程
+两阶段训练：Stage 1 - 独立训练DeepEncoder；Stage 2 - 训练DeepSeek-OCR。动态分辨率Gundam-master模式的能力是用6M数据进行CPT获得的。
+
+#### 3.5.1 训练DeepEncoder
+遵循Vary的方式 $^{注}$ ，利用一个紧凑的LM使用next token预测的框架训练DeepEncoder。
+- 数据：OCR 1.0 & OCR 2.0，LAION采样（100M）通用数据。
+- 训练超参：AdanW + cosine annealing scheduler，lr 5e-5，2 epochs，bs 1280，training sequence length 4096。
+
+注：Vary训练方式，在Encoder后面接了一个小的语言模型。在任务上：OCR图像则直接预测图中文字；图标数据则预测图表的python dict；自然图像则是captioning预测。
+
+#### 3.5.2 训练DeepSeek-OCR
+流水线并行：划分为4部分，DeepEncoder划分2部分，Decoder（共12层）划分2部分
+- PP0: SAM & 下采样压缩器，整体视为vision tokenizer，**参数冻结**
+- PP1: CLIP，视为输入embedding层，**参数未冻结**
+- PP2: Decoder前6层，**参数未冻结**
+- PP3: Decoder后6层，**参数未冻结**
+
+训练细节：20 * 8 GPUs（A100 40G），DP 40，global bs 640，AdamW + step-based scheduler，初始lr 3e-5
+
+问题：怎么训练的？自回归PT？
 
 ### 4. 评估
+#### 4.1 视觉文本压缩
+数据集：Fox
+- 英文文档部分，使用deepseek-ocr的tokenizer对GT文本进行分词，选择token量在600-1300的文档进行测试（total 100页）
+- 在tiny / small模式下测试，分别只需要64 / 100个视觉tokens即可表征图像
+- 测试Prompt："<image>\nFree OCR."
+<img width="2240" height="1092" alt="image" src="https://github.com/user-attachments/assets/d239aee4-3881-4086-9edf-535ee4dfd11a" />
 
+#### 4.2 OCR性能
+DeepSeek-OCR不仅是一个实验模型，它具有很强的实践能力，可以为LLM/VLM预训练构建数据。
+<img width="2280" height="2514" alt="image" src="https://github.com/user-attachments/assets/8239d859-15a5-4027-95ad-e99d718c985d" />
+
+Benchmark：OmniDocBench
+- 结果：
+    - 仅需要100视觉tokens (640 × 640)，deepseek-ocr就超过了使用256 tokens的GOT-OCR2.0
+    - 使用400tokens (285有效tokens，1280 × 1280)，实现了SOTA标准性能
+    - 使用少于800个tokens，DeepSeek-OCR优于MinerU2.0（需要近7,000个视觉tokens）
