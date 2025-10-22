@@ -114,7 +114,7 @@ xxx
 数据集：Fox
 - 英文文档部分，使用deepseek-ocr的tokenizer对GT文本进行分词，选择token量在600-1300的文档进行测试（total 100页）
 - 在tiny / small模式下测试，分别只需要64 / 100个视觉tokens即可表征图像
-- 测试Prompt："<image>\nFree OCR."
+- 测试Prompt："\<image\>\nFree OCR."
 <img width="2240" height="1092" alt="image" src="https://github.com/user-attachments/assets/d239aee4-3881-4086-9edf-535ee4dfd11a" />
 
 #### 4.2 OCR性能
